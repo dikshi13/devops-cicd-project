@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_URL = 'http://13.127.106.128:9000'  // Your SonarQube URL
-        SONARQUBE_TOKEN = credentials('sonar-token') // Jenkins Credentials ID
+        DOCKER_IMAGE = 'dikshi13/devops-cicd-project'
+        DOCKER_TAG = 'latest'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Code from GitHub') {
             steps {
                 git 'https://github.com/dikshi13/devops-cicd-project.git'
             }
@@ -22,7 +22,7 @@ pipeline {
         stage('SonarQube Code Quality Check') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.login=${SONARQUBE_TOKEN}'
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
@@ -35,14 +35,15 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t dikshi13/devops-app:v1 .'
+                sh 'docker build -t $DOCKER_IMAGE:$DOCKER_TAG .'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
-                    sh 'docker push dikshi13/devops-app:v1'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                    sh 'docker push $DOCKER_IMAGE:$DOCKER_TAG'
                 }
             }
         }
@@ -51,16 +52,6 @@ pipeline {
             steps {
                 sh 'ansible-playbook -i inventory deploy.yml'
             }
-        }
-    }
-
-    post {
-        success {
-            echo ' Pipeline Successfully Completed '
-        }
-
-        failure {
-            echo 'Pipeline Failed! Check Logs'
         }
     }
 }
