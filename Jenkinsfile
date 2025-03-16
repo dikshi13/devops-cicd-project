@@ -1,19 +1,15 @@
 pipeline {
     agent any
-    
+
     environment {
-        GIT_CREDENTIALS = 'github-token'
-        SONARQUBE_SERVER = 'SonarQube'    // SonarQube server name from Jenkins configuration
-        DOCKER_IMAGE = 'myapp:latest'
+        SONARQUBE_URL = 'http://13.127.106.128:9000'  // Your SonarQube URL
+        SONARQUBE_TOKEN = credentials('sonar-token') // Jenkins Credentials ID
     }
 
     stages {
-
-        stage('Clone Code from GitHub') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', 
-                    url: 'https://github.com/dikshi13/devops-cicd-project.git',
-                    credentialsId: "${GIT_CREDENTIALS}"
+                git 'https://github.com/dikshi13/devops-cicd-project.git'
             }
         }
 
@@ -26,7 +22,7 @@ pipeline {
         stage('SonarQube Code Quality Check') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                    sh 'mvn sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.login=${SONARQUBE_TOKEN}'
                 }
             }
         }
@@ -39,32 +35,32 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t myapp:latest .'
+                sh 'docker build -t dikshi13/devops-app:v1 .'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withDockerRegistry([credentialsId: 'docker-credentials', url: '']) {
-                    sh 'docker tag myapp:latest yourdockerhubusername/myapp:latest'
-                    sh 'docker push yourdockerhubusername/myapp:latest'
+                withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
+                    sh 'docker push dikshi13/devops-app:v1'
                 }
             }
         }
 
         stage('Deploy with Ansible') {
             steps {
-                sh 'ansible-playbook -i ansible/inventory ansible/deploy.yml'
+                sh 'ansible-playbook -i inventory deploy.yml'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo ' Pipeline Successfully Completed '
         }
+
         failure {
-            echo 'Pipeline failed. Check the logs.'
+            echo 'Pipeline Failed! Check Logs'
         }
     }
 }
