@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Clone Code from GitHub') {
             steps {
-                git 'https://github.com/your-username/devops-cicd-project.git'
+                git 'git 'https://github.com/dikshi13/devops-cicd-project.git'
             }
         }
 
