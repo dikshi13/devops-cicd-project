@@ -13,7 +13,7 @@ pipeline {
             }
         }
 
-        stage('Maven Build & Test') {
+        stage('Maven Build & Test Cases') {
             steps {
                 sh 'mvn clean package'
                 sh 'mvn test'
@@ -26,7 +26,7 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar -Dsonar.login=${SONARQUBE_TOKEN}'
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
@@ -42,7 +42,9 @@ pipeline {
                 branch 'main'
             }
             steps {
-                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
+                    echo "DockerHub Login Successful!"
+                }
             }
         }
 
@@ -67,7 +69,7 @@ pipeline {
 
     post {
         always {
-            junit '**/target/surefire-reports/*.xml'
+            junit 'target/surefire-reports/*.xml'
         }
 
         success {
@@ -75,7 +77,7 @@ pipeline {
         }
 
         failure {
-            echo " Build Failed!"
+            echo "Build Failed!"
         }
     }
 }
