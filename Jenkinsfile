@@ -2,66 +2,34 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_URL = 'http://<SonarQube-Server-IP>:9000' // SonarQube Server URL
-        SONARQUBE_TOKEN = credentials('sonar-token') // SonarQube token stored in Jenkins credentials
-        DOCKER_CREDENTIALS = credentials('docker-hub-credentials') // Docker Hub Credentials ID in Jenkins
-        DOCKER_IMAGE = 'myapp:latest'
-        DOCKER_REPO = 'your-dockerhub-username/myapp'
+        DOCKER_IMAGE = 'mydockerimage'
+        DOCKER_REPO = 'dikshi13/devops-cicd-project'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo.git'
+                checkout scm
             }
         }
 
-        stage('Build with Maven') {
+        stage('SonarQube Analysis') {
             steps {
-                sh 'mvn clean install'
-            }
-        }
-
-        stage('SonarQube Code Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                    mvn sonar:sonar \
-                    -Dsonar.host.url=${SONARQUBE_URL} \
-                    -Dsonar.login=${SONARQUBE_TOKEN}
-                    '''
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh 'mvn clean verify sonar:sonar'
                 }
-            }
-        }
-
-        stage('Run Selenium Tests') {
-            steps {
-                sh 'mvn test' // Run Selenium Test Cases
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                script {
+                    docker.build("${DOCKER_IMAGE}")
+                }
             }
         }
 
         stage('Push Docker Image to Docker Hub') {
             steps {
-                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
-                    sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REPO}:latest"
-                    sh "docker push ${DOCKER_REPO}:latest"
-                }
-            }
-        }
-
-        stage('Deploy with Ansible') {
-            steps {
-                sh '''
-                ansible-playbook -i inventory deploy.yml
-                '''
-            }
-        }
-    }
-}
+                withDockerRegistry([credentialsId: 'doc
 
