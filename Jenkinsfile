@@ -55,9 +55,7 @@ pipeline {
 
     post {
         always {
-            node('master') {
-                junit '**/target/surefire-reports/*.xml'
-            }
+            junit '**/target/surefire-reports/*.xml'
         }
 
         success {
