@@ -21,12 +21,9 @@ pipeline {
         }
 
         stage('SonarQube Code Analysis') {
-            when {
-                branch 'main'
-            }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                    sh 'mvn sonar:sonar -Dsonar.login=${SONARQUBE_TOKEN}'
                 }
             }
         }
@@ -38,29 +35,18 @@ pipeline {
         }
 
         stage('Docker Hub Login') {
-            when {
-                branch 'main'
-            }
             steps {
-                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
-                    echo "DockerHub Login Successful!"
-                }
+                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
             }
         }
 
         stage('Push Docker Image to Docker Hub') {
-            when {
-                branch 'main'
-            }
             steps {
                 sh "docker push dikshith13/devops-cicd-project:${BUILD_NUMBER}"
             }
         }
 
         stage('Ansible Deployment to EC2') {
-            when {
-                branch 'main'
-            }
             steps {
                 sh 'ansible-playbook -i inventory deploy.yml'
             }
@@ -69,7 +55,9 @@ pipeline {
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml'
+            node {
+                junit '**/target/surefire-reports/*.xml'
+            }
         }
 
         success {
@@ -77,7 +65,7 @@ pipeline {
         }
 
         failure {
-            echo "Build Failed!"
+            echo " Build Failed!"
         }
     }
 }
