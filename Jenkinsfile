@@ -67,7 +67,10 @@ pipeline {
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml'
+            // Fixed the issue here, added `node` block
+            node {
+                junit 'target/surefire-reports/*.xml'
+            }
         }
 
         success {
@@ -75,7 +78,7 @@ pipeline {
         }
 
         failure {
-            echo "Build Failed!"
+            echo " Build Failed!"
         }
     }
 }
