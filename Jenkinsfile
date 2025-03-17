@@ -13,7 +13,7 @@ pipeline {
             }
         }
 
-        stage('Maven Build & Test Cases') {
+        stage('Maven Build & Test') {
             steps {
                 sh 'mvn clean package'
                 sh 'mvn test'
@@ -67,10 +67,7 @@ pipeline {
 
     post {
         always {
-            // Fixed the issue here, added `node` block
-            node {
-                junit 'target/surefire-reports/*.xml'
-            }
+            junit '**/target/surefire-reports/*.xml'
         }
 
         success {
