@@ -55,7 +55,7 @@ pipeline {
 
     post {
         always {
-            node {
+            node('master') {
                 junit '**/target/surefire-reports/*.xml'
             }
         }
